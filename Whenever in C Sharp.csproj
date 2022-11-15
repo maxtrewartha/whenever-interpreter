@@ -6,6 +6,7 @@
     <RootNamespace>Whenever_in_C_Sharp</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>whenever</AssemblyName>
   </PropertyGroup>
 
 </Project>

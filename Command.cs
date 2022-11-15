@@ -10,19 +10,22 @@ namespace Whenever_in_C_Sharp
 	class Command
 	{
 		private static readonly string print = "print";
-		private string? deferString { get; set; }
-		private string? againString { get; set; }
-		private string? actionString { get; set; }
+		public string? deferString { get; set; }
+		public string? againString { get; set; }
+		public string? actionString { get; set; }
 		public int numToDo = 1;
 
 		public void execute(int lineNumber)
 		{
 			try
 			{
-
-			} catch (SyntaxErrorException e)
+				if (this.evaluateBool(deferString)) return;
+				this.action();
+				if (!this.evaluateBool(againString)) WheneverCode.code.changeNumToDo(lineNumber, -1);
+			}
+			catch (SyntaxErrorException e)
 			{
-				Console.WriteLine("[" + Environment.ProcessPath + "] Syntax error at line " + lineNumber.ToString());
+				Console.WriteLine("Syntax error at line " + lineNumber.ToString());
 				Console.WriteLine(e.Message);
 				Environment.Exit(1);
 			}
@@ -46,7 +49,7 @@ namespace Whenever_in_C_Sharp
 			if (notequals >= 0 && (i < 0 || notequals < i)) i = notequals;
 
 			// I have no idea what this does, I'm just hoping this works
-			if(i >= 0)
+			if (i >= 0)
 			{
 				int lside = Math.Max(s.Substring(0, i).LastIndexOf("&&"), s.Substring(0, i).LastIndexOf("||"));
 				int rside1 = s.IndexOf("&&", 1);
@@ -62,13 +65,13 @@ namespace Whenever_in_C_Sharp
 				string rstring = "";
 				string lcomp;
 				string rcomp;
-				string op = s.Substring(i, i + 2);
+				string op = s.Substring(i, i + 2 - i);
 				// extract left comparison operand and left boolean leftover string if necessary
 				if (lside >= 0)
 				{
 					lside += 2;
 					lstring = s.Substring(0, lside);
-					lcomp = s.Substring(lside, i).Trim();
+					lcomp = s.Substring(lside, i - lside).Trim();
 				}
 				else
 					lcomp = s.Substring(0, i).Trim();
@@ -81,7 +84,7 @@ namespace Whenever_in_C_Sharp
 				if (rside >= 0)
 				{
 					rstring = s.Substring(rside);
-					rcomp = s.Substring(i, rside).Trim();
+					rcomp = s.Substring(i, rside - i).Trim();
 				}
 				else
 					rcomp = s.Substring(i).Trim();
@@ -94,7 +97,7 @@ namespace Whenever_in_C_Sharp
 				// https://stackoverflow.com/questions/3581741/c-sharp-equivalent-to-javas-charat
 				else if (op[0] == '<') comp = evaluateInt(lcomp) < evaluateInt(rcomp);
 				else comp = evaluateInt(lcomp) > evaluateInt(rcomp); // >
-				// I hope the comp.ToString() works :)
+																	 // I hope the comp.ToString() works :)
 				return evaluateBool(lstring + comp.ToString() + rstring);
 			}
 
@@ -111,8 +114,8 @@ namespace Whenever_in_C_Sharp
 
 		private void action()
 		{
-			if (actionString.IndexOf(print) == 0) throw new NotImplementedException("doPrint(actionString.SubString(print.length)).Trim()");
-			else throw new NotImplementedException("doLines(actionString)");
+			if (actionString.IndexOf(print) == 0) doPrint(actionString.Substring(print.Length).Trim());
+			else doLines(actionString);
 			return; // TODO Fix CS0162 :)
 		}
 
@@ -139,24 +142,84 @@ namespace Whenever_in_C_Sharp
 			else
 				lineNumber = evaluateInt(s);
 			if (WheneverCode.traceLevel >= 2)
-				Console.WriteLine("[" + Environment.ProcessPath + "] [Adding line " + lineNumber + ", " + numTimes + " times]");
-			WheneverCode.code.changeNumToDo(lineNumber, numTimes);
+				Console.WriteLine($"Adding line {lineNumber}, {numTimes} times");
+			WheneverCode.code!.changeNumToDo(lineNumber, numTimes);
 		}
-
-
 
 		private int evaluateInt(string s)
 		{
+			Console.WriteLine($"Eval Int: {s}");
 			try
 			{
 				return int.Parse(s);
-			} catch (FormatException e)
+			}
+			catch (FormatException e)
 			{
-				if(WheneverCode.traceLevel > 4)
+				if (WheneverCode.traceLevel > 4)
 				{
-					Console.WriteLine("[" + Environment.ProcessPath + " Format exception, passed: " + s);
+					Console.WriteLine($"Int Eval Exception: {s}");
 				}
-				throw new NotImplementedException("Yea nah I'm doing this later");
+				int i = 0, j = 0;
+				if ((i = s.IndexOf("N(")) >= 0)
+				{
+					Console.WriteLine($"i = {i}, j = {j}");
+					j = i + 1;
+					int depth = 1;
+					try
+					{
+						while (depth > 0)
+						{
+							j++;
+							if (s[j] == '(') depth++;
+							if (s[j] == ')') depth--;
+						}
+					}
+					catch (IndexOutOfRangeException)
+					{
+						throw new WheneverException("[Error] Mismatched parentheses in arithmetic expression function call");
+					}
+					if (WheneverCode.traceLevel > 3)
+					{
+						Console.WriteLine("N() argument: " + s.Substring(i + 2, j - (i + 2)));
+						Console.WriteLine("N() substituted: " + s.Substring(0, i) + WheneverCode.code!.getNumToDo(evaluateInt(s.Substring(i + 2, j - (i + 2)))) + s.Substring(j + 1));
+					}
+					return evaluateInt(s.Substring(0, i) + WheneverCode.code!.getNumToDo(evaluateInt(s.Substring(i + 2, j - (i + 2)))) + s.Substring(j + 1));
+				}
+				else if ((i = s.IndexOf("(")) >= 0)
+				{
+					Console.WriteLine($"i = {i}, j = {j}");
+					j = i;
+					int depth = 1;
+					try
+					{
+						while (depth > 0)
+						{
+							j++;
+							if (s[j] == '(')
+								depth++;
+							if (s[j] == ')')
+								depth--;
+						}
+					}
+					catch (IndexOutOfRangeException)
+					{
+						throw new WheneverException("[Error] Mismatched parentheses in arithmetic expression");
+					}
+					if (WheneverCode.traceLevel > 3)
+					{
+						Console.WriteLine("() argument: " + s.Substring(i + 1, j - (i+1)));
+						Console.WriteLine("() substituted: " + s.Substring(0, i) + evaluateInt(s.Substring(i + 1, j - (i+1))) + s.Substring(j + 1));
+					}
+					return evaluateInt(s.Substring(0, i) + evaluateInt(s.Substring(i + 1, j - (i + 1))) + s.Substring(j + 1));
+				}
+				else if (s.IndexOf("+") >= 0 || s.IndexOf("-") >= 0)
+				{
+					throw new NotImplementedException("Yea nah I'm doing this later");
+				}
+				else
+				{
+					return multiply(s);
+				}
 			}
 		}
 
@@ -164,20 +227,72 @@ namespace Whenever_in_C_Sharp
 		 * Evaluates the argument string as an integer expression.
 		 * Argument string may only contain * and / binary operators and unary minuses.
 		 */
-		private int multiply(String s)
+		private int multiply(string s)
 		{
-		int i = s.IndexOf("*");
-		int j = s.IndexOf("/");
-		if (i >= 0 && (j< 0 || i<j))
-		{
-			if (WheneverCode.traceLevel > 3) Console.WriteLine("[" + Environment.ProcessPath +"] [* arguments: " + s.Substring(0, i).Trim() + ", " + s.Substring(i+1).Trim() + "]");
-			return evaluateInt(s.Substring(0, i).Trim()) * evaluateInt(s.Substring(i+1).Trim());
+			int i = s.IndexOf("*");
+			int j = s.IndexOf("/");
+			if (i >= 0 && (j < 0 || i < j))
+			{
+				if (WheneverCode.traceLevel > 3) Console.WriteLine($"Multiply (*) arguments: {s}");
+				return evaluateInt(s.Substring(0, i).Trim()) * evaluateInt(s.Substring(i + 1).Trim());
+			}
+			else
+			{
+				if (WheneverCode.traceLevel > 3) Console.WriteLine($"Divide (/) arguments: {s}");
+				return (int)(evaluateInt(s.Substring(0, j).Trim()) / evaluateInt(s.Substring(j + 1).Trim()));
+			}
 		}
-		else
+
+		private void doPrint(string s)
 		{
-			if (WheneverCode.traceLevel > 3) Console.WriteLine("[/ arguments: " + s.Substring(0, j).Trim() + ", " + s.Substring(j+1).Trim() + "]");
-			return (int) (evaluateInt(s.Substring(0,j).Trim()) / evaluateInt(s.Substring(j+1).Trim()));
+			// Wow look at me using fancy C# things like s[^1], I'm so smart
+			if (s[0] != '(' || s[s.Length - 1] != ')') throw new WheneverException("[Error] Print statement must be in parentheses");
+			s = s.Substring(1, s.Length - 2).Trim();
+			string outString = "";
+
+			while (s.Length > 0)
+			{
+				// if item begins with a string literal it begins with a double quote
+				if (s[0] == '"')
+				{
+					int i = s.IndexOf('"', 1);
+					if (i < 0) throw new WheneverException("[Error] String must be delimited by double quotes");
+
+					outString += s.Substring(1, i - 1);
+
+					if (i + 1 == s.Length)
+					{
+						s = "";
+					}
+					else
+					{
+						s = s.Substring(i + 1).Trim();
+
+						if (s[0] != '+') throw new WheneverException("Illegal string concatenation, + expected");
+						// remove + sign
+						s = s.Substring(1).Trim();
+					}
+				}
+				else
+				{
+					// item does not begin with a string literal
+					// get index of opening double quote
+					int i = s.IndexOf('"');
+					if (i < 0)
+					{ // there are no more string literals - all stuff is an integer expression
+						outString += evaluateInt(s);
+						s = "";
+					}
+					else
+					{ // there is a concatenated string literal
+					  // check for concatenation operator
+						if (s[s.Substring(0, i).Trim().Length - 1] != '+') throw new WheneverException("Illegal string concatenation, + expected");
+						outString += evaluateInt(s.Substring(0, s.Substring(0, i).Trim().Length - 1).Trim());
+						s = s.Substring(i);
+					}
+				}
+			}
+			Console.WriteLine(outString);
 		}
-	}
 	}
 }
