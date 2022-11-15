@@ -43,12 +43,16 @@ namespace Whenever_in_C_Sharp
 		{
 			int space = line.IndexOf(" ");
 			int tab = line.IndexOf("\t");
-			if (space < 0 && tab < 0) throw new SyntaxErrorException("Missing line number");
+			if (space < 0 && tab < 0) throw new WheneverException("[" + Environment.ProcessPath + "] Missing line number");
 			int? lineNumber;
 			try
 			{
 				var lineNo = line.Substring(0, (tab < 0 || tab > space) ? space : tab);
 				lineNumber = int.Parse(lineNo);
+			}
+			catch (FormatException e)
+			{
+				throw new WheneverException("[" + Environment.ProcessPath + "] Bad line number format");
 			}
 
 		}

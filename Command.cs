@@ -94,7 +94,8 @@ namespace Whenever_in_C_Sharp
 				// https://stackoverflow.com/questions/3581741/c-sharp-equivalent-to-javas-charat
 				else if (op[0] == '<') comp = evaluateInt(lcomp) < evaluateInt(rcomp);
 				else comp = evaluateInt(lcomp) > evaluateInt(rcomp); // >
-				return evaluateBool(lstring + String.valueOf(comp) + rstring);
+				// I hope the comp.ToString() works :)
+				return evaluateBool(lstring + comp.ToString() + rstring);
 			}
 
 			i = s.IndexOf("||");
@@ -113,6 +114,33 @@ namespace Whenever_in_C_Sharp
 			if (actionString.IndexOf(print) == 0) throw new NotImplementedException("doPrint(actionString.SubString(print.length)).Trim()");
 			else throw new NotImplementedException("doLines(actionString)");
 			return; // TODO Fix CS0162 :)
+		}
+
+		private void doLines(string s)
+		{
+			// Why do you need a string tokeniser then the only delimiter is , ?
+			IEnumerable<string> lines = s.Split(",");
+			foreach (var line in lines)
+			{
+				doLine(line);
+			}
+		}
+
+		private void doLine(string s)
+		{
+			int numTimes = 1;
+			int lineNumber = 0;
+			int i;
+			if ((i = s.IndexOf("#")) >= 0)
+			{
+				numTimes = evaluateInt(s.Substring(i + 1));
+				lineNumber = evaluateInt(s.Substring(0, i));
+			}
+			else
+				lineNumber = evaluateInt(s);
+			if (WheneverCode.traceLevel >= 2)
+				Console.WriteLine("[" + Environment.ProcessPath + "] [Adding line " + lineNumber + ", " + numTimes + " times]");
+			WheneverCode.code.changeNumToDo(lineNumber, numTimes);
 		}
 
 
