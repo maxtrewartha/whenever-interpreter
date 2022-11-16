@@ -9,4 +9,8 @@
     <AssemblyName>whenever</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="org.matheval" Version="1.0.0.3" />
+  </ItemGroup>
+
 </Project>

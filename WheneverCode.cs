@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Data;
 using System.Threading.Tasks;
 
 namespace Whenever_in_C_Sharp
@@ -11,97 +10,91 @@ namespace Whenever_in_C_Sharp
 	{
 		private static readonly string defer = "defer";
 		private static readonly string again = "again";
-		public static CodeTable? code;
-		public static int traceLevel { get; set; } = 0;
+		// TODO Implement CodeTable
+		public static CodeList? list { get; set; }
+		public static int traceLevel { get; private set; } = 0;
 
-		public WheneverCode(string infile, string t)
+		// Constructor for code and shit
+		public WheneverCode(string source)
 		{
-			if (string.IsNullOrWhiteSpace(t)) t = "0";
+			// I think this works?
+			new WheneverCode(source, "0");
+		}
+
+		public WheneverCode(string source, string trace)
+		{
+			// I'm porting this properly, so everything will bt tried and caught (hopefully)
 			try
 			{
-				traceLevel = int.Parse(t);
-			} 
-			catch (FormatException e)
+				traceLevel = int.Parse(trace);
+			}
+			catch (FormatException)
 			{
-				Console.WriteLine("Invalid trace level, use an integer");
+				Console.WriteLine("[Error] Illegal value used in trace level, must be an integer");
 				Environment.Exit(1);
 			}
-			code = new CodeTable();
+
+			list = new CodeList();
 			try
 			{
-				using (StreamReader file = new StreamReader(infile))
+				using (StreamReader file = new StreamReader(source))
 				{
 					int counter = 0;
 					string ln;
 
 					while ((ln = file.ReadLine()) != null)
 					{
+						// TODO Implement Command Parsing
 						parse(ln.Trim());
 						counter++;
 					}
-					Console.WriteLine($"Sucessfully parsed {counter} lines");
+					Whenever.debug($"Sucessfully parsed {counter} line{(counter == 1 ? "" : "s")}");
 					file.Close();
 				}
 			}
-			catch (FileNotFoundException e)
+			catch
 			{
-				Console.WriteLine("[Error] Program source file unavailable: " + infile);
+				Console.WriteLine($"[Error] Program source file unavailable: {source}");
+				Environment.Exit(1);
 			}
 		}
 
 		private void parse(string line)
 		{
-			int space = line.IndexOf(" ");
-			int tab = line.IndexOf("\t");
+			// Make sure the line actually starts with a line number
+			int space = line.IndexOf(' ');
+			int tab = line.IndexOf('\t');
 			if (space < 0 && tab < 0) throw new WheneverException("[Error] Missing line number");
+
+			// Gets line number
+
 			int? lineNumber;
+			int whitespace = tab < 0 || tab > space ? space : tab;
 			try
 			{
-				var lineNo = line.Substring(0, (tab < 0 || tab > space) ? space : tab);
-				lineNumber = int.Parse(lineNo);
+				lineNumber = int.Parse(line.Substring(0, whitespace));
+				Whenever.debug($"Parsing Line Number {lineNumber}", 7);
 			}
-			catch (FormatException e)
+			catch (FormatException)
 			{
-				throw new WheneverException("[Error] Bad line number format");
+				Console.WriteLine($"[Error] Invalid line number format: {line}");
+				Environment.Exit(1);
 			}
-			line = line.Substring((tab < 0 || tab > space) ? space : tab).Trim();
+
+			// Get line contents
+
+			line = line.Substring(whitespace);
 			Command command = new Command();
-			int endDefer = 0, endAgain = 0;
-			int i = line.IndexOf(defer);
-			if (i >= 0)
-			{
-				endDefer = i = line.IndexOf('(', i);
-				int nest = 1;
-				try
-				{
-					while(nest > 0)
-					{
-						if (line[++endDefer] == ')') nest--;
-						if (line[endDefer] == '(') nest++;
-					}
-				}
-				catch (IndexOutOfRangeException e)
-				{
-					throw new WheneverException("Defer clause required matched parenthesesesesesesese");
-				}
-				command.deferString = line.Substring(i + 1, endDefer++ - (i+1));
-			}
-			line = line.Substring(Math.Max(endDefer, endAgain)).Trim();
-			if (line[line.Length - 1] != ';') throw new WheneverException("Line requires semi-colon termination");
-			command.actionString = line.Substring(0, line.Length - 1);
-			code.Add(lineNumber, command);
 
 		}
 
 		public void run()
 		{
-			while (code.totalToDo > 0)
+			while (list!.totalToDo > 0)
 			{
-				int totalToDo = code.totalToDo;
-				int instanceToDo = (int)new Random().NextDouble() * totalToDo + 1;
-				code.doCommand(instanceToDo);
+				int instance = (int)(new Random().NextDouble() * list!.totalToDo) + 1;
+				list.doCommand(instance);
 			}
 		}
-
 	}
 }

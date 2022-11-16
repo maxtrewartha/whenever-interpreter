@@ -13,13 +13,23 @@ namespace Whenever_in_C_Sharp
 			}
 			else if (args.Length == 1)
 			{
-				code = new WheneverCode(args[0], "0");
+				code = new WheneverCode(args[0]);
 				code.run();
 			}
 			else
 			{
 				Console.WriteLine("Usage: whenever.exe <sourcefile> [tracelevel]\n");
 				Environment.Exit(0);
+			}
+		}
+
+		public static void debug(string message, int level = 0)
+		{
+			// There is no pattern to the trace levels, you may as well just leave it on 7
+			if (WheneverCode.traceLevel >= level)
+			{
+				// string concat or format strings? it doesn't really matter, the code is slow enough anyway
+				Console.WriteLine($"[DEBUG] {message}");
 			}
 		}
 	}
