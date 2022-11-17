@@ -36,7 +36,18 @@ namespace Whenever_in_C_Sharp
 
 		public void doCommand(int instance)
 		{
-
+			Whenever.debug($"Do command called: {instance}");
+			IEnumerator commands = this.Keys.GetEnumerator();
+			int lineNumber = (int)commands.Current;
+			Command command = this[lineNumber];
+			while (instance > command.numToDo)
+			{
+				instance -= command.numToDo;
+				commands.MoveNext();
+				lineNumber = (int)commands.Current;
+				command = this[lineNumber];
+			}
+			Whenever.debug($"Attempting line {lineNumber}", 5);
 		}
 
 	}

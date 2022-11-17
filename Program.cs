@@ -18,7 +18,7 @@ namespace Whenever_in_C_Sharp
 			}
 			else
 			{
-				Console.WriteLine("Usage: whenever.exe <sourcefile> [tracelevel]\n");
+				Console.WriteLine("Usage: whenever.exe <sourcefile> [tracelevel]");
 				Environment.Exit(0);
 			}
 		}

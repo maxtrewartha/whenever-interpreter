@@ -59,11 +59,11 @@ namespace Whenever_in_C_Sharp
 			}
 		}
 
-		private void parse(string line)
+		private void parse(string source)
 		{
 			// Make sure the line actually starts with a line number
-			int space = line.IndexOf(' ');
-			int tab = line.IndexOf('\t');
+			int space = source.IndexOf(' ');
+			int tab = source.IndexOf('\t');
 			if (space < 0 && tab < 0) throw new WheneverException("[Error] Missing line number");
 
 			// Gets line number
@@ -72,19 +72,44 @@ namespace Whenever_in_C_Sharp
 			int whitespace = tab < 0 || tab > space ? space : tab;
 			try
 			{
-				lineNumber = int.Parse(line.Substring(0, whitespace));
+				lineNumber = int.Parse(source.Substring(0, whitespace));
 				Whenever.debug($"Parsing Line Number {lineNumber}", 7);
 			}
 			catch (FormatException)
 			{
-				Console.WriteLine($"[Error] Invalid line number format: {line}");
+				Console.WriteLine($"[Error] Invalid line number format: {source}");
 				Environment.Exit(1);
 			}
 
 			// Get line contents
 
-			line = line.Substring(whitespace);
+			source = source.Substring(whitespace);
 			Command command = new Command();
+			int endDefer = 0;
+			int endAgain = 0;
+
+			int i = source.IndexOf(defer);
+
+			// There is a defer clause
+			if (i >= 0)
+			{
+				endDefer = source.IndexOf('(', i);
+				i = endDefer;
+				int nest = 1;
+
+				try
+				{
+					while (nest > 0)
+					{
+						if (source[++endDefer] == ')') nest--;
+						if (source[endDefer] == '(') nest++;
+					}
+				}
+				catch (IndexOutOfRangeException)
+				{
+					throw new WheneverException("[Error] Defer clause doesn't have matched parentheses");
+				}
+			}
 
 		}
 
